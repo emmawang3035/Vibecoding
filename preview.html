@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Command Center</title>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+        color: #fff;
+    }
+    nav {
+        background: #0f2340;
+        padding: 15px;
+        text-align: center;
+    }
+    nav a {
+        color: #fff;
+        margin: 0 15px;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    .container {
+        padding: 30px;
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    input, button {
+        padding: 10px;
+        font-size: 16px;
+    }
+    button {
+        cursor: pointer;
+    }
+    table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding: 10px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid #444;
+    }
+</style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html">Dashboard</a>
+    <a href="about.html">Developer Profile</a>
+</nav>
+
+<div class="container">
+    <h1>Inventory Command Center</h1>
+
+    <div class="form-group">
+        <input type="text" id="itemName" placeholder="Item Name">
+    </div>
+    <div class="form-group">
+        <input type="number" id="itemQuantity" placeholder="Quantity">
+    </div>
+    <div class="form-group">
+        <input type="number" id="itemPrice" placeholder="Price">
+    </div>
+    <button onclick="addItem()">Add Item</button>
+    <button onclick="clearItems()">Clear All Items</button>
+
+    <table id="inventoryTable">
+        <thead>
+            <tr><th>Item</th><th>Quantity</th><th>Price</th><th>Total Value</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <canvas id="inventoryChart" width="400" height="200"></canvas>
+</div>
+
+<script>
+    let inventory = JSON.parse(localStorage.getItem('inventoryData')) || [];
+
+    function saveAndRender() {
+        localStorage.setItem('inventoryData', JSON.stringify(inventory));
+        renderTable();
+        renderChart();
+    }
+
+    function validateInputs(name, quantity, price) {
+        if (!name || !quantity || !price) {
+            alert("All fields are required!");
+            return false;
+        }
+        if (quantity < 0 || price < 0) {
+            alert("Numbers can't be negative!");
+            return false;
+        }
+        if (inventory.some(item => item.name.toLowerCase() === name.toLowerCase())) {
+            alert("Item already exists!");
+            return false;
+        }
+        return true;
+    }
+
+    function addItem() {
+        let name = document.getElementById('itemName').value.trim();
+        let qty = parseInt(document.getElementById('itemQuantity').value);
+        let price = parseFloat(document.getElementById('itemPrice').value);
+
+        if (!validateInputs(name, qty, price)) return;
+
+        inventory.push({
+            name: name,
+            quantity: qty,
+            price: price,
+            total: qty * price
+        });
+
+        saveAndRender();
+        document.getElementById('itemName').value = "";
+        document.getElementById('itemQuantity').value = "";
+        document.getElementById('itemPrice').value = "";
+    }
+
+    function clearItems() {
+        if (confirm("Are you sure you want to delete all items?")) {
+            inventory = [];
+            saveAndRender();
+        }
+    }
+
+    function renderTable() {
+        let tbody = document.querySelector('#inventoryTable tbody');
+        tbody.innerHTML = "";
+        inventory.forEach(item => {
+            let row = `<tr>
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td>${item.price.toFixed(2)}</td>
+                <td>${item.total.toFixed(2)}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function renderChart() {
+        let ctx = document.getElementById('inventoryChart').getContext('2d');
+        let names = inventory.map(i => i.name);
+        let values = inventory.map(i => i.total);
+
+        if (window.myChart) window.myChart.destroy();
+
+        window.myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: names,
+                datasets: [{
+                    label: 'Total Value',
+                    data: values,
+                    backgroundColor: '#0f3460'
+                }]
+            }
+        });
+    }
+
+    saveAndRender();
+</script>
+
+</body>
+</html>
